@@ -1,25 +1,16 @@
 jQuery ($) ->
-
-    log = (text) ->
-
-        try
-            console.log text
-        catch e
-            ;
-
     init = () ->
-
         defaultSettings =
             url: '.'
             container: '.page-container'
-            loading: false
+            loadingBar: false
             busy: false
             # footer: '#footer'
             pageName: 'page'
             nextPage: 2
             extraData: false,
             loging: true,
-
+            offset: 200,
             getQuery: () ->
                 search = {}
 
@@ -27,7 +18,6 @@ jQuery ($) ->
                     search[i.split('=')[0]] = i.split('=')[1]
 
                 search
-
             getAjaxData: () ->
                 data = {}
                 data[@.pageName] = @.nextPage
@@ -43,52 +33,47 @@ jQuery ($) ->
     settings = init()
 
     $(window).scroll () ->
-        # dHeight = $(document).height() - $(window).height()
-
-        # if settings.footer
-        #     dHeight = dHeight - $(settings.footer).height()
-
         bottomOffset = $(settings.container).offset().top
         bottomOffset += $(settings.container).height()
-        bottomOffset -= $(window).height()
+        bottomOffset -= $(window).height() + settings.offset
 
         if $(window).scrollTop() >= bottomOffset and not settings.busy
+            if settings.loging
+                console.log 'Have started loading next page'
 
             if settings.hasNext
                 data = settings.getAjaxData()
                 $container = $ settings.container
                 settings.busy = true
 
-                if settings.loading
-                    $loading = $ settings.loading
-                    $container.append $loading
+                if settings.loadingBar
+                    $loadingBar = $ settings.loadingBar
+                    $container.append $loadingBar
 
                 $.ajax
                     url: settings.url
                     dataType: 'JSON'
                     data: data
-
                     success: (response) ->
                         content = response.content
                         settings.hasNext = response.hasNext
 
                         if settings.loging
-                            log "Page #{settings.nextPage} loaded"
+                            console.log "Page #{settings.nextPage} loaded"
 
                         if settings.hasNext
                             settings.nextPage = response.nextPage
 
-                        if settings.loading
-                            $container.find($loading).replaceWith(content)
+                        if settings.loadingBar
+                            $container.find($loadingBar).replaceWith(content)
                         else
                             $container.append(content)
 
                         settings.busy = false
-
                     error: (err) ->
-                        log err
+                        console.error err
                         $container.trigger('ajaxLoadError')
                         settings.busy = false
 
             else if settings.loging
-                log 'Loading page - denied'
+                console.log 'Loading page - denied'
